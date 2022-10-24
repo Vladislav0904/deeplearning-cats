@@ -1,6 +1,26 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import torchvision.utils
+from torch import load
 from torch.nn import Module, Conv2d, Linear, MaxPool2d, AdaptiveMaxPool1d
 from torch.nn.functional import relu, dropout
+
 from imageLoader import *
+
+
+# functions to show an image
+
+
+def imshow(img):
+    img = img / 2 + 0.5  # unnormalize
+    npimg = img.numpy()
+    plt.imshow(np.transpose(npimg, (1, 2, 0)))
+    plt.show()
+
+
+num_epochs = 2
+PATH = 'model/catvsdogs.pth'
 
 
 class Network(Module):
@@ -43,12 +63,46 @@ class Network(Module):
         return relu(self.out(x))
 
 
+#
+# for iter in range(4, 50):
+#     network = Network()
+#     criterion = CrossEntropyLoss()
+#     optimizer = optim.SGD(network.parameters(), lr=0.001, momentum=0.9)
+#     network.load_state_dict(torch.load('model/catvsdogs.pth'))
+#     imageLoader = ImageLoader(trainData, transform)
+#     dataLoader = DataLoader(imageLoader, batch_size=10, shuffle=True)
+#
+#     for epoch in range(num_epochs):
+#         running_loss = 0.0
+#         for i, datas in enumerate(dataLoader, iter * 500):
+#             inputs, labels = datas
+#             optimizer.zero_grad()
+#             outputs = network(inputs)
+#             loss = criterion(outputs, labels)
+#             loss.backward()
+#             optimizer.step()
+#             running_loss += loss.item()
+#             if i % 500 == 499:
+#                 print(f'[{epoch + 1}, {i + 1:5d}] loss: {running_loss / 500:.3f}')
+#                 running_loss = 0.0
+#                 break
+#
+#     print("Finished iteration " + str(iter))
+#     save(network.state_dict(), PATH)
+#     torch.cuda.empty_cache()
+
+
 imageLoader = ImageLoader(trainData, transform)
-dataLoader = DataLoader(imageLoader, batch_size=10, shuffle=True)
+dataLoader = DataLoader(imageLoader, batch_size=4, shuffle=True)
+dataiter = iter(dataLoader)
+images, labels = next(dataiter)
 
-data = iter(dataLoader)
-images = next(data)
-
+# print images
+imshow(torchvision.utils.make_grid(images))
+print('GroundTruth: ', ' '.join(f'{labels[j]}' for j in range(4)))
 network = Network()
-out = network(images[0])
-print(out)
+network.load_state_dict(load(PATH))
+outputs = network(images)
+_, predicted = torch.max(outputs, 1)
+print('Predicted: ', ' '.join(f'{predicted[j]}'
+                              for j in range(4)))
